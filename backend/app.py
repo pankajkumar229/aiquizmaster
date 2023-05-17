@@ -10,10 +10,19 @@ def generate_quiz():
             'Authorization': 'Bearer INSERT_OPENAI_KEY_HERE', # TODO secrets management - github will close repo if we accidentally send openai api key
             'Content-Type': 'application/json'
         }
+
+
+        # Assume OCR / parser has processed input pdf file and dumped results to a local dir. Use this as context for ChatGPT API call + quiz generation
+        with open('path/to/file.txt', 'r') as file:
+            text = file.read()
+
         data = {
             'messages': [
-                {'role': 'system', 'content': 'You are an educational quiz bot. Given the following context, come up with a question concerning core ideas or details included in the text. Ensure that the question is directly relevant and answerable based solely on information provided in the text'},
-                {'role': 'user', 'content': 'Generate a quiz question and answer.'}
+                {'role': 'system', 'content': 'You are an educational quiz bot. Given the following context, \
+                 come up with a question concerning core ideas or details included in the text. Ensure that the \
+                 question is directly relevant and answerable based solely on information provided in the text'},
+                {'role': 'user', 'content': 'Generate a quiz question and answer.'},
+                {'role': 'assistant', 'content': text}  # text file content as context for questions
             ],
             'max_tokens': 50
         }
