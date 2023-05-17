@@ -1,1 +1,76 @@
-### TBD
+apiVersion: v1
+kind: Secret
+metadata:
+  name: myregistrykey
+  namespace: default
+data:
+  .dockerconfigjson: ewoJImF1dGhzIjogewoJCSJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iOiB7CgkJCSJhdXRoIjogImNHRnVhMkZxYTNWdFlYSXlNams2WkdOcmNsOXdZWFJmZUdKbFkwMTZOMUJ0ZVhSNU5UUjBNemxKY2xwaE4ybDRaMkZaIgoJCX0KCX0KfQ==
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aiquizmaster-ui
+  labels:
+    app: aiquizmaster
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aiquizmaster
+  template:
+    metadata:
+      labels:
+        app: aiquizmaster
+    spec:
+      containers:
+      - name: aiquizmaster-ui
+        image: pankajkumar229/aiquizmasters-ui:v1
+        ports:
+        - containerPort: 8888
+---
+kind: Service 
+apiVersion: v1 
+metadata:
+  name: aiquizmaster-service-ui
+spec:
+  type: NodePort
+  selector:
+    app: aiquizmaster
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aiquizmaster 
+  labels:
+    app: aiquizmaster
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aiquizmaster
+  template:
+    metadata:
+      labels:
+        app: aiquizmaster
+    spec:
+      containers:
+      - name: aiquizmaster
+        image: pankajkumar229/aiquizmasters:v1
+        ports:
+        - containerPort: 8888
+---
+kind: Service 
+apiVersion: v1 
+metadata:
+  name: aiquizmaster-service 
+spec:
+  type: NodePort
+  selector:
+    app: aiquizmaster
+  ports:
+    - port: 8888 
+      targetPort: 8888
