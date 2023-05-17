@@ -2,8 +2,6 @@ FROM node:lts-alpine as node
 
 RUN mkdir /ui
 COPY . /ui
-# COPY ./staticserver /staticserver
-
 WORKDIR /ui
 # RUN rm -rf staticserver/ && apk add python && apk add rsync && apk add py-pip && pip install shyaml && 
 RUN chmod 755 ./start.sh && export NODE_OPTIONS=--max_old_space_size=8096 && yarn install 
