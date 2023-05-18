@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aiquizmaster
+spec:
+  tls:
+  - hosts:
+    - aiquizmaster.app
+    secretName: aiquizmaster-cert
+  rules:
+  - host: aiquizmaster.app
+    http:
+      paths:
+      - path: /backend
+        pathType: Prefix
+        backend:
+          service:
+            name: aiquizmaster-service
+            port:
+              number: 8888
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aiquizmaster-service-ui
+            port:
+              number: 3000

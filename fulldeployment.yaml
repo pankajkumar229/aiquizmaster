@@ -87,7 +87,7 @@ spec:
     spec:
       containers:
       - name: aiquizmaster
-        image: pankajkumar229/aiquizmasters:v1
+        image: pankajkumar229/aiquizmasters:v1.5
         ports:
         - containerPort: 8888
 ---

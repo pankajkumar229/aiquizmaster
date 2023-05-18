@@ -1,7 +1,7 @@
-FROM python:3.6
+FROM python:3.11
 
 # Creating Application Source Code Directory
-RUN mkdir -p /src
+RUN mkdir -p /src/uploads
 
 # Setting Home Directory for containers
 WORKDIR /src
