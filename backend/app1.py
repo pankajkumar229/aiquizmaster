@@ -15,8 +15,6 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Chroma
 from langchain.llms import OpenAI
-import random
-import string
 
 api_key = "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"
 # split the documents into chunks
@@ -74,7 +72,6 @@ class DocHandler(BaseHandler):
         if self.get_query_argument('file',None):
             ### Test with curl http://localhost:8888/backend/doc/af50cf65-5869-4b22-a15e-e6dd41b7e3a5/?file=True
             chunkSize = 1024 * 1024 * 1 # 1 Mib
-            self.set_header("Content-Type", "application/pdf")
             with open(__UPLOADS__ + docmap[did]["cname"], 'rb') as f:
                 while True:
                     chunk = f.read(chunkSize)
@@ -123,7 +120,7 @@ class QuestionHandler(BaseHandler):
         qid_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
         ### Create a question based on the file content in did
         ### Make sure it is async
-        question = "When should you signal?"
+        question = "What is your name?"
         if not "questions" in docmap[did]:
             docmap[did]["questions"] = {}
         qentry = {"question": question, "id": qid_str}
@@ -131,19 +128,14 @@ class QuestionHandler(BaseHandler):
         self.write(json.dumps(qentry))
 
     async def get(self, did, qid ):
-        print("========")
-        print(str(docmap))
-        print("$$$$$$$$$")
         self.write(json.dumps(docmap[did]["questions"][qid]))
 
 class ResponseHandler(BaseHandler):
     async def post(self, did, qid):
         rid_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
         response = tornado.escape.json_decode(self.request.body)["response"]
-        print("Response is $$$$ " + response)
-        print("###### docmap is " + str(docmap))
-        if not "responses" in docmap[did]["questions"][qid]:
-            docmap[did]["questions"][qid]["responses"] = {}
+        if not "responses" in docmap[did]["questions"]:
+            docmap[did]["questions"]["responses"] = {}
         rentry = {"response": response, "id": rid_str}
         docmap[did]["questions"][qid]["responses"][rid_str] = rentry
         self.write(json.dumps(rentry))
@@ -156,33 +148,33 @@ class FeedbackHandler(BaseHandler):
         fid_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
         ### Create a feedback based on the file content, question, answer in did
         ### Make sure it is async
-        feedback = "Always signal when you turn, change lanes, slow down, or stop."
-        feedback_ok = bool(random.getrandbits(1))
-        if not "feedbacks" in docmap[did]["questions"][qid]["responses"][rid]:
-            docmap[did]["questions"][qid]["responses"][rid]["feedbacks"] = {}
+        feedback = "Text feedback"
+        feedback_ok = True
+        if not "questions" in docmap[did]:
+            docmap[did]["questions"][qid]["responses"][rid]["feedback"] = {}
         fentry = {"feedback": feedback,"feedback_ok": feedback_ok, "id": fid_str}
-        docmap[did]["questions"][qid]["responses"][rid]["feedbacks"][fid_str] = fentry
+        docmap[did]["questions"][qid]["responses"][rid]["feedback"][fid_str] = fentry
         self.write(json.dumps(fentry))
 
-    async def get(self, did, qid, rid, fid):
-        self.write(json.dumps(docmap[did]["questions"][qid]["responses"][rid]["feedbacks"][fid]))
+    async def get(self, did, qid, fid):
+        self.write(json.dumps(docmap[did]["questions"][qid]["responses"][rid]["feedback"][fid]))
 
 
 async def main():
     application = Application([
         (r"/", DefaultHandler),
-        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/response/(?P<rid>.+)/feedback/(?P<fid>.+)/", FeedbackHandler),
-        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/response/(?P<rid>.+)/feedback/", FeedbackHandler),
-        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/response/", ResponseHandler),
-        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/response/(?P<rid>.+)/", ResponseHandler),
-        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/", QuestionHandler),
-        (r"/backend/doc/(?P<did>.+)/question/", QuestionHandler),
+        (r"/backend/doc", DocHandler),
         (r"/backend/doc/(?P<did>.+)/", DocHandler),
-        (r"/backend/doc", DocHandler)
+        (r"/backend/doc/(?P<did>.+)/question/", QuestionHandler),
+        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/", QuestionHandler),
+        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/response", ResponseHandler),
+        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/response/(?P<rid>.+)", ResponseHandler),
+        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/response/(?P<rid>.+)/feedback", FeedbackHandler),
+        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/response/(?P<rid>.+)/feedback/(?P<fid>.+)", FeedbackHandler)
     ])
-    application.listen(8888)
+    application.listen(8889)
     shutdown_event = asyncio.Event()
-    print("Listening on 8888")
+    print("Listening on 8889")
     await shutdown_event.wait()
 
 if __name__ == "__main__":

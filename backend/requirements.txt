@@ -2,3 +2,8 @@ openai
 requests
 aiofiles
 tornado
+openai
+langchain
+pypdf
+chromadb
+tiktoken
