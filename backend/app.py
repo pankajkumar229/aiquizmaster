@@ -15,12 +15,21 @@ class Userform(tornado.web.RequestHandler):
 
 docmap = {}
 
+class BaseHandler(tornado.web.RequestHandler):
+    def get(self, *args, **kwargs):
+        self.write("say something")
+
+    def set_default_headers(self, *args, **kwargs):
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Headers", "x-requested-with")
+        self.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+
 class DefaultHandler(tornado.web.RequestHandler):
     ## Test with $ curl -F 'filearg=@/home/labcomputer/aiquizmaster/README.md' http://localhost:8888/backend/doc
     async def get(self):
         self.write(json.dumps({}))
 
-class DocHandler(tornado.web.RequestHandler):
+class DocHandler(BaseHandler):
     ## Test with $ curl -F 'filearg=@/home/labcomputer/aiquizmaster/README.md' http://localhost:8888/backend/doc
     async def post(self):
         #https://technobeans.com/2012/09/17/tornado-file-uploads/
@@ -60,7 +69,7 @@ class DocHandler(tornado.web.RequestHandler):
             self.write(json.dumps(docmap[did]))
 
 
-class QuestionHandler(tornado.web.RequestHandler):
+class QuestionHandler(BaseHandler):
     async def post(self, did):
         qid_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
         ### Create a question based on the file content in did
@@ -68,27 +77,27 @@ class QuestionHandler(tornado.web.RequestHandler):
         question = "What is your name?"
         if not "questions" in docmap[did]:
             docmap[did]["questions"] = {}
-        qentry = {"question": question, "id", qid_str}
+        qentry = {"question": question, "id": qid_str}
         docmap[did]["questions"][qid_str] = qentry
         self.write(json.dumps(qentry))
 
     async def get(self, did, qid ):
         self.write(json.dumps(docmap[did]["questions"][qid]))
 
-class ResponseHandler(tornado.web.RequestHandler):
+class ResponseHandler(BaseHandler):
     async def post(self, did, qid):
         rid_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
         response = tornado.escape.json_decode(self.request.body)["response"]
         if not "responses" in docmap[did]["questions"]:
             docmap[did]["questions"]["responses"] = {}
-        rentry = {"response": response, "id", rid_str}
+        rentry = {"response": response, "id": rid_str}
         docmap[did]["questions"][qid]["responses"][rid_str] = rentry
         self.write(json.dumps(rentry))
 
     async def get(self, did, qid, rid):
         self.write(json.dumps(docmap[did]["questions"][qid]["responses"][rid]))
 
-class FeedbackHandler(tornado.web.RequestHandler):
+class FeedbackHandler(BaseHandler):
     async def post(self, did, qid, rid):
         fid_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
         ### Create a feedback based on the file content, question, answer in did
@@ -97,7 +106,7 @@ class FeedbackHandler(tornado.web.RequestHandler):
         feedback_ok = True
         if not "questions" in docmap[did]:
             docmap[did]["questions"][qid]["responses"][rid]["feedback"] = {}
-        fentry = {"feedback": feedback,"feedback_ok": feedback_ok, "id", fid_str}
+        fentry = {"feedback": feedback,"feedback_ok": feedback_ok, "id": fid_str}
         docmap[did]["questions"][qid]["responses"][rid]["feedback"][fid_str] = fentry
         self.write(json.dumps(fentry))
 
