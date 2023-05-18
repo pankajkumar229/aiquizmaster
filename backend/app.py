@@ -4,6 +4,7 @@ import tornado.web
 import os, uuid, json
 import asyncio
 import aiofiles
+import random
 from tornado.web import MissingArgumentError, HTTPError, Application, StaticFileHandler
 
 __UPLOADS__ = "uploads/"
@@ -19,7 +20,6 @@ class DefaultHandler(tornado.web.RequestHandler):
     async def get(self):
         self.write(json.dumps({}))
 
-
 class DocHandler(tornado.web.RequestHandler):
     ## Test with $ curl -F 'filearg=@/home/labcomputer/aiquizmaster/README.md' http://localhost:8888/backend/doc
     async def post(self):
@@ -32,9 +32,10 @@ class DocHandler(tornado.web.RequestHandler):
         cname = uuid_str + extn
         async with aiofiles.open(__UPLOADS__ + cname, mode='wb') as f:
             await f.write(fileinfo['body'])
-        docmap[uuid_str] = {"fullname":fname, "extn": extn, "cname": cname, "id":uuid_str}
+        entry = {"fullname":fname, "extn": extn, "cname": cname, "id":uuid_str}
+        docmap[uuid_str] = entry
         print(cname + " is uploaded!! Check %s folder" %__UPLOADS__)
-        self.write(json.dumps(docmap[uuid_str]))
+        self.write(json.dumps(entry))
 
     async def get(self, did = None):
         if self.get_query_argument('file',None):
@@ -59,11 +60,62 @@ class DocHandler(tornado.web.RequestHandler):
             self.write(json.dumps(docmap[did]))
 
 
+class QuestionHandler(tornado.web.RequestHandler):
+    async def post(self, did):
+        qid_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        ### Create a question based on the file content in did
+        ### Make sure it is async
+        question = "What is your name?"
+        if not "questions" in docmap[did]:
+            docmap[did]["questions"] = {}
+        qentry = {"question": question, "id", qid_str}
+        docmap[did]["questions"][qid_str] = qentry
+        self.write(json.dumps(qentry))
+
+    async def get(self, did, qid ):
+        self.write(json.dumps(docmap[did]["questions"][qid]))
+
+class ResponseHandler(tornado.web.RequestHandler):
+    async def post(self, did, qid):
+        rid_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        response = tornado.escape.json_decode(self.request.body)["response"]
+        if not "responses" in docmap[did]["questions"]:
+            docmap[did]["questions"]["responses"] = {}
+        rentry = {"response": response, "id", rid_str}
+        docmap[did]["questions"][qid]["responses"][rid_str] = rentry
+        self.write(json.dumps(rentry))
+
+    async def get(self, did, qid, rid):
+        self.write(json.dumps(docmap[did]["questions"][qid]["responses"][rid]))
+
+class FeedbackHandler(tornado.web.RequestHandler):
+    async def post(self, did, qid, rid):
+        fid_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        ### Create a feedback based on the file content, question, answer in did
+        ### Make sure it is async
+        feedback = "Text feedback"
+        feedback_ok = True
+        if not "questions" in docmap[did]:
+            docmap[did]["questions"][qid]["responses"][rid]["feedback"] = {}
+        fentry = {"feedback": feedback,"feedback_ok": feedback_ok, "id", fid_str}
+        docmap[did]["questions"][qid]["responses"][rid]["feedback"][fid_str] = fentry
+        self.write(json.dumps(fentry))
+
+    async def get(self, did, qid, fid):
+        self.write(json.dumps(docmap[did]["questions"][qid]["responses"][rid]["feedback"][fid]))
+
+
 async def main():
     application = Application([
         (r"/", DefaultHandler),
         (r"/backend/doc", DocHandler),
         (r"/backend/doc/(?P<did>.+)/", DocHandler),
+        (r"/backend/doc/(?P<did>.+)/question/", QuestionHandler),
+        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/", QuestionHandler),
+        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/response", ResponseHandler),
+        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/response/(?P<rid>.+)", ResponseHandler),
+        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/response/(?P<rid>.+)/feedback", FeedbackHandler),
+        (r"/backend/doc/(?P<did>.+)/question/(?P<qid>.+)/response/(?P<rid>.+)/feedback/(?P<fid>.+)", FeedbackHandler)
     ], autoreload=True)
     application.listen(8888)
     shutdown_event = asyncio.Event()
