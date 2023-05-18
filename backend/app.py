@@ -52,7 +52,7 @@ class DocHandler(tornado.web.RequestHandler):
                         break
                     finally:
                         del chunk
-                        await gen.sleep(0.000000001)
+                        await asyncio.sleep(0.000000001)
             self.finish()
         else:
             ### Test with curl http://localhost:8888/backend/doc/7e5cc450-ad6b-4475-9cbd-859a02d28e5e/
